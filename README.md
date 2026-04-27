@@ -51,14 +51,16 @@ graph LR
 
 系统要求：macOS / Linux, Python 3.8+
 
-只需克隆或进入本仓库目录，执行一键安装脚本：
+只需在您的终端中执行以下一行命令，即可自动克隆仓库并完成安装：
 
 ```bash
-# 给予脚本执行权限
-chmod +x install.sh
+git clone git@github.com:ViolentBanana/Crabber-Skill.git ~/.crabber-source && cd ~/.crabber-source && chmod +x install.sh && ./install.sh
+```
 
-# 执行一键安装
-./install.sh
+**或者如果您没有配置 SSH 密钥，可以使用 HTTPS 克隆：**
+
+```bash
+git clone https://github.com/ViolentBanana/Crabber-Skill.git ~/.crabber-source && cd ~/.crabber-source && chmod +x install.sh && ./install.sh
 ```
 
 **安装脚本将自动执行以下操作：**

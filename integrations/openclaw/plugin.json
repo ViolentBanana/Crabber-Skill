@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "name": "crabber",
+  "description": "Exposes an AI-generated file to the local network via a lightweight, beautiful web interface and returns a Markdown link for downloading.",
+  "author": "Antigravity",
+  "executable": "bash",
+  "args": [
+    "-c",
+    "~/.crabber/bin/crabber \"$1\""
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file_path": {
+        "type": "string",
+        "description": "The absolute path to the file you want to share with the user."
+      }
+    },
+    "required": ["file_path"]
+  },
+  "returns": {
+    "type": "string",
+    "description": "A Markdown string containing the link to the generated web interface."
+  }
+}

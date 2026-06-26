@@ -73,6 +73,16 @@ git clone https://github.com/ViolentBanana/Crabber-Skill.git ~/.crabber-source &
 > **提示**：安装完成后，建议将 `~/.crabber/bin` 加入到您的系统环境变量中：
 > `export PATH="$HOME/.crabber/bin:$PATH"`
 
+### 🧹 卸载指南 (Uninstallation)
+
+若要完全卸载 Crabber，只需进入源目录并运行卸载脚本即可：
+
+```bash
+cd ~/.crabber-source && ./uninstall.sh
+```
+
+该脚本将自动终止后台运行的 Crabber FastAPI 服务进程，完全删除运行沙箱 `~/.crabber` 文件夹，并移除关联的 Hermes Skill 插件。
+
 ---
 
 ## 🚀 集成与使用 (Usage)

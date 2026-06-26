@@ -51,6 +51,13 @@ git clone https://github.com/ViolentBanana/Crabber-Skill.git ~/.crabber-source &
 export PATH="$HOME/.crabber/bin:$PATH"
 ```
 
+### 步骤 3：卸载工作流
+若用户要求卸载 Crabber，执行以下命令即可实现一键安全清理：
+```bash
+cd ~/.crabber-source && ./uninstall.sh
+```
+该脚本会自动终止后台服务并删除沙箱环境，同时提示用户手动从环境变量中清理 PATH。
+
 ---
 
 ## 🔌 4. 技能与插件对接规范

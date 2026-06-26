@@ -52,6 +52,13 @@ Prompt the user or append to environment configurations (like `~/.zshrc` or `~/.
 export PATH="$HOME/.crabber/bin:$PATH"
 ```
 
+### Step 3: Uninstallation Workflow
+If the user requests to uninstall Crabber, run the following command to clean up the environment:
+```bash
+cd ~/.crabber-source && ./uninstall.sh
+```
+This script will terminate running services, remove the sandbox directory, and prompt the user to clean the environment variables manually.
+
 ---
 
 ## 🔌 4. Integration Specifications

@@ -9,6 +9,7 @@ import subprocess
 import argparse
 import urllib.request
 import urllib.error
+import re
 from pathlib import Path
 
 CRABBER_HOME = Path(os.path.expanduser("~/.crabber"))
@@ -20,40 +21,75 @@ UVICORN_BIN = CRABBER_HOME / "venv" / "bin" / "uvicorn"
 
 def get_local_ip():
     """Gets the local IP address (usually en0/wifi)."""
+    candidates = []
+
+    # 1. Query active network interfaces via system commands (ifconfig / ip addr)
+    # This is the most reliable way on macOS/Linux to bypass local hostname resolution issues.
     try:
-        hostname = socket.gethostname()
-        ips = socket.gethostbyname_ex(hostname)[2]
-        valid_ips = []
-        for ip in ips:
-            if ip.startswith("127.") or ip.startswith("198.18.") or ip.startswith("169.254."):
-                continue
-            valid_ips.append(ip)
-        
-        if valid_ips:
-            # Prioritize standard home/office LAN subnets (192.168.*)
-            # then generic private subnets, filtering virtual machine subnets (like Parallels)
-            valid_ips.sort(key=lambda x: (
-                0 if x.startswith("192.168.") else
-                1 if x.startswith("172.") else
-                2 if (x.startswith("10.") and not (x.startswith("10.211.") or x.startswith("10.37."))) else
-                3
-            ))
-            return valid_ips[0]
+        output = subprocess.check_output(["ifconfig"], text=True, stderr=subprocess.DEVNULL)
+        blocks = re.split(r'\n(?=[a-zA-Z0-9])', output)
+        for block in blocks:
+            if "status: active" in block or "RUNNING" in block:
+                for line in block.split('\n'):
+                    if 'inet ' in line:
+                        parts = line.strip().split()
+                        if len(parts) >= 2:
+                            candidates.append(parts[1])
     except Exception:
         pass
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        # doesn't even have to be reachable
-        s.connect(('10.255.255.255', 1))
-        ip = s.getsockname()[0]
-        if ip.startswith("198.18.") or ip.startswith("127."):
-            raise ValueError("Proxy or loopback IP returned")
+        output = subprocess.check_output(["ip", "-o", "addr", "show", "up"], text=True, stderr=subprocess.DEVNULL)
+        for line in output.split('\n'):
+            if 'inet ' in line:
+                match = re.search(r'inet\s+([0-9.]+)', line)
+                if match:
+                    candidates.append(match.group(1))
     except Exception:
-        ip = '127.0.0.1'
-    finally:
-        s.close()
-    return ip
+        pass
+
+    # 2. Fallback to socket gethostbyname_ex
+    if not candidates:
+        try:
+            hostname = socket.gethostname()
+            ips = socket.gethostbyname_ex(hostname)[2]
+            candidates.extend(ips)
+        except Exception:
+            pass
+
+    # 3. Fallback to UDP socket connect to dummy external IP
+    if not candidates:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            # doesn't even have to be reachable
+            s.connect(('10.255.255.255', 1))
+            ip = s.getsockname()[0]
+            candidates.append(ip)
+        except Exception:
+            pass
+        finally:
+            s.close()
+
+    # Filter out loopback, proxy TUN ranges, and autoconfig range
+    valid_ips = []
+    for ip in candidates:
+        if ip.startswith("127.") or ip.startswith("198.18.") or ip.startswith("169.254."):
+            continue
+        if ip not in valid_ips:
+            valid_ips.append(ip)
+
+    if valid_ips:
+        # Prioritize standard home/office LAN subnets (192.168.*)
+        # then generic private subnets, filtering virtual machine subnets (like Parallels)
+        valid_ips.sort(key=lambda x: (
+            0 if x.startswith("192.168.") else
+            1 if x.startswith("172.") else
+            2 if (x.startswith("10.") and not (x.startswith("10.211.") or x.startswith("10.37."))) else
+            3
+        ))
+        return valid_ips[0]
+
+    return '127.0.0.1'
 
 def is_crabber_server_running(port):
     """Checks if our Crabber server is running and responding on a given port."""

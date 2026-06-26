@@ -25,9 +25,11 @@
 - ⚡️ **极速无感投递**: Agent 端一键调用，无需复杂的配置与传输等待。
 - 🎨 **Apple 级美学体验**: 内置基于 Tailwind CSS 构建的深色模式 UI，自动匹配文件拓展名图标，响应式适配移动端。
 - 🔗 **零拷贝与空间隔离**: 采用软链接 (Symbolic Link) 映射文件，拒绝占用额外存储空间，严格防止非授权目录暴露。
-- 🤖 **自适应网络发现**: 自动探知当前设备的 en0/Wi-Fi 局域网 IP，动态分配未被占用的端口。
+- 🤖 **自适应与代理兼容**: 自动探知当前物理网卡（如 en0）局域网 IP，智能识别并过滤 VPN/Clash 等虚拟 TUN 网卡（如 `198.18.0.1`）。
+- ⚙️ **端口健康检测**: 自动检测配置端口是否被其他应用占用。若发生冲突，自动通过 HTTP 校验并重映射至空闲端口。
 - 🧹 **TTL 自动清理**: 支持生存时间配置，后台常驻任务（Daemon）到期自动销毁映射文件，保障隐私与安全。
 - 🔌 **即插即用集成**: 原生提供 Hermes 兼容的 Python 脚本，以及 OpenClaw 标准的 Plugin JSON 配置。
+- 🤖 **AI 智能体友好**: 附带 [AGENTS.md](file:///Users/mooyan/Documents/idea_project/AntigravityProjects/crabber_kill/AGENTS.md) 指南，AI Agent 读取后可自动实现一键安装部署及工具集成。
 
 ---
 

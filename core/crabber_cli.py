@@ -7,6 +7,8 @@ import uuid
 import socket
 import subprocess
 import argparse
+import urllib.request
+import urllib.error
 from pathlib import Path
 
 CRABBER_HOME = Path(os.path.expanduser("~/.crabber"))
@@ -18,16 +20,51 @@ UVICORN_BIN = CRABBER_HOME / "venv" / "bin" / "uvicorn"
 
 def get_local_ip():
     """Gets the local IP address (usually en0/wifi)."""
+    try:
+        hostname = socket.gethostname()
+        ips = socket.gethostbyname_ex(hostname)[2]
+        valid_ips = []
+        for ip in ips:
+            if ip.startswith("127.") or ip.startswith("198.18.") or ip.startswith("169.254."):
+                continue
+            valid_ips.append(ip)
+        
+        if valid_ips:
+            # Prioritize standard home/office LAN subnets (192.168.*)
+            # then generic private subnets, filtering virtual machine subnets (like Parallels)
+            valid_ips.sort(key=lambda x: (
+                0 if x.startswith("192.168.") else
+                1 if x.startswith("172.") else
+                2 if (x.startswith("10.") and not (x.startswith("10.211.") or x.startswith("10.37."))) else
+                3
+            ))
+            return valid_ips[0]
+    except Exception:
+        pass
+
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # doesn't even have to be reachable
         s.connect(('10.255.255.255', 1))
         ip = s.getsockname()[0]
+        if ip.startswith("198.18.") or ip.startswith("127."):
+            raise ValueError("Proxy or loopback IP returned")
     except Exception:
         ip = '127.0.0.1'
     finally:
         s.close()
     return ip
+
+def is_crabber_server_running(port):
+    """Checks if our Crabber server is running and responding on a given port."""
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/files", timeout=1) as response:
+            if response.status == 200:
+                data = json.loads(response.read().decode())
+                return isinstance(data, dict) and "files" in data
+    except Exception:
+        pass
+    return False
 
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -89,14 +126,16 @@ def share_file(file_path, ttl=3600):
     if not source_path.exists():
         print(f"Error: File does not exist at {source_path}")
         sys.exit(1)
+    if source_path.is_dir():
+        print(f"Error: Sharing directories is not supported directly. Please compress/zip the folder '{source_path.name}' first.")
+        sys.exit(1)
         
     config = load_config()
     target_port = config.get("port", 8888)
     
-    # Check if the configured port is actually our server or another app
-    # If it's another app and our server isn't running, we need a new port
-    # For simplicity, we assume if it's running, it's ours. If not, we find one.
-    if not is_port_in_use(target_port):
+    # Verify if Crabber is already running on the configured port.
+    # If not running or occupied by another app, find a new port.
+    if not is_crabber_server_running(target_port):
         target_port = get_available_port(target_port)
         config["port"] = target_port
         save_config(config)

@@ -6,7 +6,8 @@
   "executable": "bash",
   "args": [
     "-c",
-    "~/.crabber/bin/crabber \"$1\""
+    "~/.crabber/bin/crabber \"$1\"",
+    "_"
   ],
   "parameters": {
     "type": "object",

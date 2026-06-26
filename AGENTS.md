@@ -1,77 +1,76 @@
-# Instructions for AI Agents (Hermes / OpenClaw / Antigravity)
+# 智能体说明书 (Hermes / 小龙虾 / Antigravity)
 
-This document provides system prompts, installation workflows, and integration guidelines for AI Agents (like Hermes, OpenClaw, Antigravity, or other LLM-based entities) to understand how to interact with and use **Crabber Skill**.
-
----
-
-## 🤖 1. What is Crabber?
-**Crabber** is a local network file-sharing tool. When you (the agent) generate files for the user (such as PDFs, PPTs, charts, images, or ZIP packages) on a headless host or remote server, you should use Crabber to share the files.
-- It starts a FastAPI daemon server locally.
-- It maps the shared file using symlinks (zero copies).
-- It returns a beautiful Web interface URL in local network (LAN) format.
+本文档面向 AI 智能体（如 Hermes、OpenClaw/小龙虾、Antigravity 或其他大模型 Agent），说明如何对接、安装和调用 **Crabber Skill**。
 
 ---
 
-## 📂 2. Rule of Usage (Safety & Constraints)
+## 🤖 1. 什么是 Crabber？
+**Crabber** 是一个局域网文件共享工具。当您（智能体）在无头服务器或远程主机上为用户生成了文件（如 PDF、PPT、图表、图像或 ZIP 压缩包）时，您应该使用 Crabber 共享这些文件给用户。
+- 它会在本地启动一个轻量级的 FastAPI 后台守护进程。
+- 它通过软链接（Symbolic Link）将生成的文件映射到 Web 可访问目录，实现零拷贝。
+- 它会返回一个局域网（LAN）格式的网页下载链接，支持移动端自适应和多文件轮询。
 
-### Do NOT Share Folders Directly
-- Crabber only supports sharing **single files**.
-- If your generated output is a folder or directory structure, you **must** compress it into a `.zip` package first using command line tools (e.g. `zip -r output.zip folder_name`) before passing it to Crabber.
-- Passing a directory directly will result in a validation error.
+---
 
-### Share Command
-To share a file, execute:
+## 📂 2. 使用规范与安全限制（重要）
+
+### 禁止直接共享文件夹
+- Crabber **仅支持共享单文件**。
+- 如果您的生成产物是一个文件夹或目录结构，您**必须**在调用 Crabber 之前，先在终端使用命令行工具（例如：`zip -r output.zip folder_name`）将其打包为 `.zip` 压缩包。
+- 直接共享文件夹将导致 CLI 报错并退出。
+
+### 共享命令
+调用 CLI 共享文件：
 ```bash
-~/.crabber/bin/crabber <absolute_path_to_file>
+~/.crabber/bin/crabber <文件绝对路径>
 ```
-Or with custom Time To Live (TTL) in seconds (default: 3600):
+或者指定自定义过期时间（TTL，单位为秒，默认一小时为 3600 秒）：
 ```bash
-~/.crabber/bin/crabber <absolute_path_to_file> --ttl <ttl_in_seconds>
+~/.crabber/bin/crabber <文件绝对路径> --ttl <生存秒数>
 ```
 
 ---
 
-## 🔧 3. Setup & Installation Workflow
+## 🔧 3. 智能体安装与配置工作流
 
-If the user asks you to install Crabber or configure it, follow these steps:
+如果用户要求您安装或配置 Crabber，请执行以下步骤：
 
-### Step 1: Clone and Run Installer
-Run this command in the shell:
+### 步骤 1：克隆仓库并运行安装脚本
+在终端中执行以下命令：
 ```bash
 git clone https://github.com/ViolentBanana/Crabber-Skill.git ~/.crabber-source && cd ~/.crabber-source && chmod +x install.sh && ./install.sh
 ```
-This script will:
-- Establish `~/.crabber` directory.
-- Create virtual Python environment under `~/.crabber/venv`.
-- Install FastAPI, Uvicorn, Jinja2.
-- Symlink the CLI script to `~/.crabber/bin/crabber`.
+该脚本会自动完成：
+- 创建运行沙箱 `~/.crabber`。
+- 在 `~/.crabber/venv` 下创建隔离的 Python 虚拟环境，并安装 FastAPI, Uvicorn, Jinja2 等依赖。
+- 将 CLI 执行文件软链接到 `~/.crabber/bin/crabber`。
 
-### Step 2: System-wide Path Setup
-Prompt the user or append to environment configurations (like `~/.zshrc` or `~/.bash_profile`):
+### 步骤 2：添加系统环境变量
+提示用户或主动在 `~/.zshrc` 或 `~/.bash_profile` 中添加：
 ```bash
 export PATH="$HOME/.crabber/bin:$PATH"
 ```
 
 ---
 
-## 🔌 4. Integration Specifications
+## 🔌 4. 技能与插件对接规范
 
-### Hermes Integration
-If you are running as a **Hermes** Agent, copy the integration module `integrations/hermes/crabber.py` directly into `~/.hermes/skills/`. You can then call `crabber` from your skills list.
+### Hermes 智能体集成
+如果运行于 **Hermes** 智能体，请直接将 `integrations/hermes/crabber.py` 复制到您的 `~/.hermes/skills/` 目录中。
 
-### OpenClaw (小龙虾) Integration
-Register the tool using `integrations/openclaw/plugin.json`.
-- When invoking, pass the parameter `file_path`.
-- The plugin execution runner launches:
+### 小龙虾 (OpenClaw) 插件集成
+使用 `integrations/openclaw/plugin.json` 注册工具。
+- 框架在调用该工具时，需传入 `file_path`（绝对路径）参数。
+- 插件的执行脚本配置如下：
   `bash -c "~/.crabber/bin/crabber \"$1\"" _ <file_path>`
-  *(Note the placeholder `_` which handles shell argument indexing correctly).*
+  *(注意：末尾的占位符 `_` 是必须的，用以保证 shell 位置参数 `$1` 正确映射为文件路径)*
 
 ---
 
-## 💬 5. Returning Share Links to Users
-After successfully executing the command, you will receive stdout matching:
+## 💬 5. 如何向用户反馈链接
+当执行 `crabber` CLI 成功后，您会从标准输出（stdout）收到如下内容：
 ```text
 ✅ [Crabber] 文件已发布，请点击查看/下载：http://<local_ip>:<port>/
 ```
-You should extract this URL and print it nicely to the user as a clickable Markdown link in the conversation, for example:
+您**必须**提取此 URL，并在聊天窗口中以美观的 Markdown 超链接格式返回给用户：
 > 🦀 我已将生成的成果文件推送到您的局域网：[点击查看/下载文件](http://192.168.2.134:8888/) (该链接将在 1 小时后失效)
